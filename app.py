@@ -1,31 +1,48 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 import google.generativeai as genai
+from dotenv import load_dotenv
+import os
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Initialize the Gemini model
+model = genai.GenerativeModel("gemini-1.5-pro")
+
+# Create Flask app
 app = Flask(_name_)
 
-# Configure your Gemini API Key
-genai.configure(api_key="AIzaSyBdNzdsdojOLRwKefQLRhZZb-Z0AjKb_KY")
-
-# Initialize chat with DevOps-specific instructions
-model = genai.GenerativeModel("models/gemini-1.5-pro")
-system_prompt = (
-    "You are a knowledgeable assistant that only answers DevOps-related questions like Docker, CI/CD, Kubernetes, Jenkins, Terraform, Ansible, GitHub Actions, monitoring, and cloud DevOps practices. "
-    "If a question is outside DevOps, reply politely that you're only trained for DevOps topics."
+# Custom system prompt (adjust as needed)
+SYSTEM_PROMPT = (
+    "You are a helpful assistant that only answers questions related to DevOps. "
+    "If the question is unrelated to DevOps (like food, travel, games, etc.), respond with: "
+    "'Sorry, I can only help with DevOps-related queries.'"
 )
-chat = model.start_chat(history=[{"role": "user", "parts": [system_prompt]}])
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+# Define chatbot route
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    user_input = data.get("message", "")
 
-@app.route("/ask", methods=["POST"])
-def ask():
-    user_message = request.json["message"]
+    if not user_input:
+        return jsonify({"error": "Message is required"}), 400
+
     try:
-        response = chat.send_message(user_message)
-        return jsonify({"reply": response.text})
+        response = model.generate_content([SYSTEM_PROMPT, user_input])
+        reply = response.text.strip()
+        return jsonify({"reply": reply})
+
     except Exception as e:
-        return jsonify({"reply": "Something went wrong: " + str(e)})
+        return jsonify({"error": str(e)}), 500
+
+# Home route (optional)
+@app.route("/", methods=["GET"])
+def home():
+    return "DevOps Chatbot is running! 🚀"
 
 if _name_ == "_main_":
     app.run(debug=True)
