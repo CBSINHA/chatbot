@@ -13,7 +13,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-pro")
 
 # Create Flask app
-app = Flask(_name_)
+app = Flask(__name__)
 
 # Custom system prompt (adjust as needed)
 SYSTEM_PROMPT = (
@@ -44,5 +44,5 @@ def chat():
 def home():
     return "DevOps Chatbot is running! 🚀"
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     app.run(debug=True)
